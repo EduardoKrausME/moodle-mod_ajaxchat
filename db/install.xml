@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/ajaxchat/db" VERSION="20260914" COMMENT="XMLDB file for mod_ajaxchat"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+    <TABLES>
+        <TABLE NAME="ajaxchat" COMMENT="AJAX chat activity instances">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true"/>
+                <FIELD NAME="intro" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="allowaudio" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="allowattachments" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="openfrom" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="course_fk" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_messages" COMMENT="Persistent copy of chat messages">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="ajaxchatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="text"/>
+                <FIELD NAME="message" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="filemeta" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="pollid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="chat_fk" TYPE="foreign" FIELDS="ajaxchatid" REFTABLE="ajaxchat" REFFIELDS="id"/>
+                <KEY NAME="user_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="chat_created_idx" UNIQUE="false" FIELDS="ajaxchatid,timecreated"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_reactions" COMMENT="Message reactions">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="ajaxchatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="messageid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="reaction" TYPE="char" LENGTH="32" NOTNULL="true"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="chat_fk" TYPE="foreign" FIELDS="ajaxchatid" REFTABLE="ajaxchat" REFFIELDS="id"/>
+                <KEY NAME="user_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="message_user_uix" UNIQUE="true" FIELDS="messageid,userid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_blocks" COMMENT="Users blocked from sending in a chat">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="ajaxchatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="blockedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="chat_fk" TYPE="foreign" FIELDS="ajaxchatid" REFTABLE="ajaxchat" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="chat_user_uix" UNIQUE="true" FIELDS="ajaxchatid,userid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_polls" COMMENT="Chat polls">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="ajaxchatid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="messageid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="question" TYPE="text" NOTNULL="true"/>
+                <FIELD NAME="position" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="top"/>
+                <FIELD NAME="closed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timeclosed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="chat_fk" TYPE="foreign" FIELDS="ajaxchatid" REFTABLE="ajaxchat" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="message_uix" UNIQUE="true" FIELDS="messageid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_poll_options" COMMENT="Poll options">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="pollid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="optiontext" TYPE="text" NOTNULL="true"/>
+                <FIELD NAME="sortorder" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="poll_fk" TYPE="foreign" FIELDS="pollid" REFTABLE="ajaxchat_polls" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="ajaxchat_poll_votes" COMMENT="Poll votes">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="pollid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="poll_fk" TYPE="foreign" FIELDS="pollid" REFTABLE="ajaxchat_polls" REFFIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="poll_user_uix" UNIQUE="true" FIELDS="pollid,userid"/>
+                <INDEX NAME="option_idx" UNIQUE="false" FIELDS="optionid"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
+</XMLDB>

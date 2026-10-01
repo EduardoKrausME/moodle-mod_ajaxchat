@@ -1,0 +1,129 @@
+<div class="ajaxchat" data-region="ajaxchat-root">
+    <aside class="ajaxchat-sidebar">
+        <div class="ajaxchat-brand">
+            <div class="ajaxchat-brand-icon">C</div>
+            <div>
+                <strong>{{title}}</strong>
+                <small>{{#str}}participants, ajaxchat{{/str}}</small>
+            </div>
+        </div>
+
+        <div class="ajaxchat-participants" data-region="participants">
+            {{#participants}}
+                <div class="ajaxchat-participant" data-userid="{{id}}">
+                    <img src="{{avatar}}" alt="" class="ajaxchat-avatar">
+                    <div class="ajaxchat-participant-name">
+                        <span>{{name}}</span>
+                        {{#blocked}}<small data-region="blocked-label">{{#str}}
+                            blockedstatus, ajaxchat{{/str}}</small>{{/blocked}}
+                    </div>
+                    {{#canmanage}}
+                        {{#blockable}}
+                            {{^self}}
+                                <button type="button" class="ajaxchat-icon-button" data-action="toggle-block"
+                                        data-userid="{{id}}"
+                                        data-blocked="{{#blocked}}1{{/blocked}}{{^blocked}}0{{/blocked}}"
+                                        title="{{#blocked}}{{#str}}unblock, ajaxchat{{/str}}{{/blocked}}{{^blocked}}{{#str}}block, ajaxchat{{/str}}{{/blocked}}">
+                                    {{#blocked}}✓{{/blocked}}{{^blocked}}⊘{{/blocked}}
+                                </button>
+                            {{/self}}
+                        {{/blockable}}
+                    {{/canmanage}}
+                </div>
+            {{/participants}}
+        </div>
+    </aside>
+
+    <main class="ajaxchat-main">
+        <header class="ajaxchat-header">
+            <div class="ajaxchat-header-user">
+                <img src="{{currentavatar}}" alt="" class="ajaxchat-avatar">
+                <div>
+                    <strong>{{title}}</strong>
+                    <small data-region="chat-status">{{#enabled}}{{#str}}
+                        online, ajaxchat{{/str}}{{/enabled}}{{^enabled}}{{#str}}
+                        chatdisabled, ajaxchat{{/str}}{{/enabled}}</small>
+                </div>
+            </div>
+            <div class="ajaxchat-header-actions">
+                {{#cancreatepoll}}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-action="open-poll">{{#str}}
+                        createpoll, ajaxchat{{/str}}</button>
+                {{/cancreatepoll}}
+                {{#canmanage}}
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-action="toggle-chat"
+                            data-enabled="{{#enabled}}1{{/enabled}}{{^enabled}}0{{/enabled}}">
+                        {{#enabled}}{{#str}}
+                            disablechat, ajaxchat{{/str}}{{/enabled}}{{^enabled}}{{#str}}
+                        enablechat, ajaxchat{{/str}}{{/enabled}}
+                    </button>
+                {{/canmanage}}
+            </div>
+        </header>
+
+        {{#intro}}
+            <div class="ajaxchat-intro">{{{intro}}}</div>
+        {{/intro}}
+
+        <div class="ajaxchat-pinned ajaxchat-pinned-top" data-region="pinned-top"></div>
+
+        <div class="ajaxchat-content-row">
+            <section class="ajaxchat-messages" data-region="messages" aria-live="polite">
+                <div class="ajaxchat-loading" data-region="loading">•••</div>
+            </section>
+            <aside class="ajaxchat-pinned ajaxchat-pinned-side" data-region="pinned-side"></aside>
+        </div>
+
+        <div class="ajaxchat-notice" data-region="notice" hidden></div>
+
+        <footer class="ajaxchat-composer" data-region="composer">
+            <div class="ajaxchat-upload-preview" data-region="upload-preview" hidden></div>
+            <div class="ajaxchat-compose-row">
+                {{#allowattachments}}
+                    <label class="ajaxchat-compose-button" title="{{#str}}attach, ajaxchat{{/str}}">
+                        <span>📎</span>
+                        <input type="file" data-region="attachment-input" hidden>
+                    </label>
+                {{/allowattachments}}
+                {{#allowaudio}}
+                    <button type="button" class="ajaxchat-compose-button" data-action="record-audio"
+                            title="{{#str}}recordaudio, ajaxchat{{/str}}">●
+                    </button>
+                {{/allowaudio}}
+                <textarea rows="1" maxlength="5000" data-region="message-input"
+                          placeholder="{{#str}}composerplaceholder, ajaxchat{{/str}}"></textarea>
+                <button type="button" class="ajaxchat-send" data-action="send">{{#str}}send, ajaxchat{{/str}}</button>
+            </div>
+        </footer>
+    </main>
+
+    <dialog class="ajaxchat-poll-dialog" data-region="poll-dialog">
+        <form method="dialog" data-region="poll-form">
+            <div class="ajaxchat-dialog-header">
+                <strong>{{#str}}createpoll, ajaxchat{{/str}}</strong>
+                <button type="button" class="ajaxchat-icon-button" data-action="close-poll-dialog">×</button>
+            </div>
+            <label>{{#str}}pollquestion, ajaxchat{{/str}}</label>
+            <input type="text" maxlength="500" class="form-control" data-region="poll-question">
+            <label>{{#str}}polloptions, ajaxchat{{/str}}</label>
+            <div data-region="poll-options">
+                <input type="text" maxlength="250" class="form-control mb-2" data-poll-option>
+                <input type="text" maxlength="250" class="form-control mb-2" data-poll-option>
+                <input type="text" maxlength="250" class="form-control mb-2" data-poll-option>
+            </div>
+            <button type="button" class="btn btn-link px-0" data-action="add-poll-option">+ {{#str}}
+                polloptions, ajaxchat{{/str}}</button>
+            <label>{{#str}}pollposition, ajaxchat{{/str}}</label>
+            <select class="form-select" data-region="poll-position">
+                <option value="top">{{#str}}polltop, ajaxchat{{/str}}</option>
+                <option value="side">{{#str}}pollside, ajaxchat{{/str}}</option>
+            </select>
+            <div class="ajaxchat-dialog-actions">
+                <button type="button" class="btn btn-secondary" data-action="close-poll-dialog">{{#str}}
+                    cancel{{/str}}</button>
+                <button type="button" class="btn btn-primary" data-action="create-poll">{{#str}}
+                    createpoll, ajaxchat{{/str}}</button>
+            </div>
+        </form>
+    </dialog>
+</div>
