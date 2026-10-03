@@ -11,7 +11,7 @@
         <div class="ajaxchat-participants" data-region="participants">
             {{#participants}}
                 <div class="ajaxchat-participant" data-userid="{{id}}">
-                    <img src="{{avatar}}" alt="" class="ajaxchat-avatar">
+                    <img src="{{{avatar}}}" alt="" class="ajaxchat-avatar">
                     <div class="ajaxchat-participant-name">
                         <span>{{name}}</span>
                         {{#blocked}}<small data-region="blocked-label">{{#str}}
@@ -37,7 +37,7 @@
     <main class="ajaxchat-main">
         <header class="ajaxchat-header">
             <div class="ajaxchat-header-user">
-                <img src="{{currentavatar}}" alt="" class="ajaxchat-avatar">
+                <img src="{{{currentavatar}}}" alt="" class="ajaxchat-avatar">
                 <div>
                     <strong>{{title}}</strong>
                     <small data-region="chat-status">{{#enabled}}{{#str}}
