@@ -9,7 +9,7 @@
 
 namespace mod_ajaxchat\privacy;
 
-defined("MOODLE_INTERNAL") || die();
+defined('MOODLE_INTERNAL') || die;
 
 use context;
 use context_module;

@@ -22,7 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined("MOODLE_INTERNAL") || die();
+defined('MOODLE_INTERNAL') || die;
 
 $string['ajaxchat:addinstance'] = 'Adicionar um novo Chat AJAX';
 $string['ajaxchat:createpoll'] = 'Criar enquetes no Chat AJAX';
