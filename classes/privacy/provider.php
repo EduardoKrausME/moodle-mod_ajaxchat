@@ -9,8 +9,6 @@
 
 namespace mod_ajaxchat\privacy;
 
-defined('MOODLE_INTERNAL') || die;
-
 use context;
 use context_module;
 use core_privacy\local\metadata\collection;
@@ -115,14 +113,18 @@ class provider implements
                 continue;
             }
 
-            $messages = $DB->get_records("ajaxchat_messages", ["ajaxchatid" => $cm->instance, "userid" => $userid], "timecreated ASC");
-            $reactions = $DB->get_records("ajaxchat_reactions", ["ajaxchatid" => $cm->instance, "userid" => $userid], "timecreated ASC");
-            $pollids = $DB->get_fieldset_select("ajaxchat_polls", "id", "ajaxchatid = :chatid", ["chatid" => $cm->instance]);
+            $messages = $DB->get_records("ajaxchat_messages",
+                ["ajaxchatid" => $cm->instance, "userid" => $userid], "timecreated ASC");
+            $reactions = $DB->get_records("ajaxchat_reactions",
+                ["ajaxchatid" => $cm->instance, "userid" => $userid], "timecreated ASC");
+            $pollids = $DB->get_fieldset_select("ajaxchat_polls", "id",
+                "ajaxchatid = :chatid", ["chatid" => $cm->instance]);
             $votes = [];
             if ($pollids) {
                 [$insql, $inparams] = $DB->get_in_or_equal($pollids, SQL_PARAMS_NAMED, "poll");
                 $inparams["userid"] = $userid;
-                $votes = $DB->get_records_select("ajaxchat_poll_votes", "userid = :userid AND pollid {$insql}", $inparams, "timecreated ASC");
+                $votes = $DB->get_records_select("ajaxchat_poll_votes",
+                    "userid = :userid AND pollid {$insql}", $inparams, "timecreated ASC");
             }
             $blocks = $DB->get_records_select(
                 "ajaxchat_blocks",
@@ -320,7 +322,8 @@ class provider implements
         if ($pollids) {
             [$insql, $params] = $DB->get_in_or_equal($pollids, SQL_PARAMS_NAMED, "poll");
             $params["userid"] = $userid;
-            $votepollids = $DB->get_fieldset_select("ajaxchat_poll_votes", "pollid", "userid = :userid AND pollid {$insql}", $params);
+            $votepollids = $DB->get_fieldset_select("ajaxchat_poll_votes", "pollid",
+                "userid = :userid AND pollid {$insql}", $params);
             foreach ($votepollids as $pollid) {
                 if ($store->get_poll((int)$pollid)) {
                     $store->mutate_poll((int)$pollid, function (array $poll) use ($userid): array {

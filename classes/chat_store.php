@@ -26,10 +26,11 @@ class chat_store {
     private string $basepath;
 
     /**
+     * __construct
+     *
      * @param int $chatid
      */
     public function __construct(int $chatid) {
-        global $CFG;
         $this->chatid = $chatid;
         $this->basepath = self::instances_root() . "/" . $chatid;
         $this->ensure_directories();

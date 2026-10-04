@@ -114,7 +114,16 @@ class action_service {
             if ($uploadkind === "audio" && ($mimetype === "" || $mimetype === "application/octet-stream")) {
                 $clientmime = strtolower(trim((string)($_FILES["upload"]["type"] ?? "")));
                 $clientmime = trim(explode(";", $clientmime, 2)[0]);
-                $allowedaudio = ["audio/webm", "video/webm", "audio/ogg", "application/ogg", "audio/mp4", "video/mp4", "audio/mpeg", "audio/wav"];
+                $allowedaudio = [
+                    "audio/webm",
+                    "video/webm",
+                    "audio/ogg",
+                    "application/ogg",
+                    "audio/mp4",
+                    "video/mp4",
+                    "audio/mpeg",
+                    "audio/wav",
+                ];
                 if (in_array($clientmime, $allowedaudio, true)) {
                     $mimetype = $clientmime;
                 }
@@ -174,7 +183,11 @@ class action_service {
                 "messageid" => $messageid,
             ]);
             $transaction->allow_commit();
-            return ["ok" => true, "message" => $this->store->prepare_message_for_client($clientmessage, $this->userid), "cursor" => $cursor];
+            return [
+                "ok" => true,
+                "message" => $this->store->prepare_message_for_client($clientmessage, $this->userid),
+                "cursor" => $cursor,
+            ];
         } catch (Throwable $exception) {
             if ($attachment) {
                 $this->store->remove_attachment($attachment);
@@ -440,7 +453,13 @@ class action_service {
         ]);
         $transaction->allow_commit();
 
-        return ["ok" => true, "userid" => $targetuserid, "blocked" => (bool)$blocked, "cursor" => $cursor, "updated" => $state["updated"]];
+        return [
+            "ok" => true,
+            "userid" => $targetuserid,
+            "blocked" => (bool)$blocked,
+            "cursor" => $cursor,
+            "updated" => $state["updated"],
+        ];
     }
 
     /**

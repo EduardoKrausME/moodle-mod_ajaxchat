@@ -53,7 +53,9 @@ $store->merge_state([
 ]);
 $state = $store->get_state();
 
-$participants = get_enrolled_users($context, "mod/ajaxchat:view", 0, "u.id,u.firstname,u.lastname,u.firstnamephonetic,u.lastnamephonetic,u.middlename,u.alternatename,u.picture,u.imagealt", "u.firstname,u.lastname");
+$participants = get_enrolled_users($context, "mod/ajaxchat:view", 0,
+    "u.id,u.firstname,u.lastname,u.firstnamephonetic,u.lastnamephonetic,u.middlename,u.alternatename,u.picture,u.imagealt",
+    "u.firstname,u.lastname");
 $participantdata = [];
 $participantids = [];
 $blockableids = [];

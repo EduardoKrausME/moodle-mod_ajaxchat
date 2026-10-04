@@ -144,7 +144,7 @@ function ajaxchat_delete_instance($id) {
 function ajaxchat_get_coursemodule_info($coursemodule) {
     global $DB;
 
-    $instance = $DB->get_record("ajaxchat", ["id" => $coursemodule->instance], "id,name,intro,introformat,openfrom", IGNORE_MISSING);
+    $instance = $DB->get_record("ajaxchat", ["id" => $coursemodule->instance], "id,name,intro,introformat,openfrom");
     if (!$instance) {
         return null;
     }
