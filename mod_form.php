@@ -23,7 +23,6 @@
  */
 
 defined("MOODLE_INTERNAL") || die();
-
 require_once($CFG->dirroot . "/course/moodleform_mod.php");
 
 /**

@@ -24,16 +24,29 @@
 
 namespace mod_ajaxchat\task;
 
+use coding_exception;
 use core\task\scheduled_task;
-use mod_ajaxchat\local\chat_store;
+use mod_ajaxchat\chat_store;
 
-defined("MOODLE_INTERNAL") || die();
-
+/**
+ * Class cleanup_runtime
+ */
 class cleanup_runtime extends scheduled_task {
+    /**
+     * get_name
+     *
+     * @return string
+     * @throws coding_exception
+     */
     public function get_name(): string {
         return get_string("pluginname", "mod_ajaxchat") . " runtime cleanup";
     }
 
+    /**
+     * execute
+     *
+     * @return void
+     */
     public function execute(): void {
         $deleted = chat_store::cleanup_runtimes();
         mtrace("mod_ajaxchat: removed {$deleted} expired runtime file(s).");

@@ -20,13 +20,22 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
-use mod_ajaxchat\local\chat_store;
+use mod_ajaxchat\chat_store;
 
+/**
+ * Class provider
+ */
 class provider implements
     \core_privacy\local\metadata\provider,
     core_userlist_provider,
     \core_privacy\local\request\plugin\provider {
 
+    /**
+     * get_metadata
+     *
+     * @param collection $collection
+     * @return collection
+     */
     public static function get_metadata(collection $collection): collection {
         $collection->add_database_table("ajaxchat_messages", [
             "userid" => "privacy:metadata:messages:userid",
@@ -52,6 +61,12 @@ class provider implements
         return $collection;
     }
 
+    /**
+     * get_contexts_for_userid
+     *
+     * @param int $userid
+     * @return contextlist
+     */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
         $params = [
@@ -79,6 +94,14 @@ class provider implements
         return $contextlist;
     }
 
+    /**
+     * export_user_data
+     *
+     * @param approved_contextlist $contextlist
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
     public static function export_user_data(approved_contextlist $contextlist): void {
         global $DB;
 
@@ -117,6 +140,14 @@ class provider implements
         }
     }
 
+    /**
+     * delete_data_for_all_users_in_context
+     *
+     * @param context $context
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
     public static function delete_data_for_all_users_in_context(context $context): void {
         global $DB;
 
@@ -144,6 +175,12 @@ class provider implements
         $store->initialise_state([]);
     }
 
+    /**
+     * delete_data_for_user
+     *
+     * @param approved_contextlist $contextlist
+     * @return void
+     */
     public static function delete_data_for_user(approved_contextlist $contextlist): void {
         $userid = $contextlist->get_user()->id;
         foreach ($contextlist->get_contexts() as $context) {
@@ -151,6 +188,13 @@ class provider implements
         }
     }
 
+    /**
+     * get_users_in_context
+     *
+     * @param userlist $userlist
+     * @return void
+     * @throws \coding_exception
+     */
     public static function get_users_in_context(userlist $userlist): void {
         $context = $userlist->get_context();
         if (!$context instanceof context_module) {
@@ -178,6 +222,12 @@ class provider implements
         $userlist->add_from_sql("userid", $sql, $params);
     }
 
+    /**
+     * delete_data_for_users
+     *
+     * @param approved_userlist $userlist
+     * @return void
+     */
     public static function delete_data_for_users(approved_userlist $userlist): void {
         $context = $userlist->get_context();
         foreach ($userlist->get_userids() as $userid) {
@@ -185,6 +235,15 @@ class provider implements
         }
     }
 
+    /**
+     * delete_user_from_context
+     *
+     * @param int $userid
+     * @param context $context
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
     private static function delete_user_from_context(int $userid, context $context): void {
         global $DB;
 

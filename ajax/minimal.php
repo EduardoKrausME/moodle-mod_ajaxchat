@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-use mod_ajaxchat\local\chat_store;
+use mod_ajaxchat\chat_store;
 
 /**
  * Shared helpers for database-free read endpoints.
@@ -23,6 +23,13 @@ use mod_ajaxchat\local\chat_store;
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/**
+ * mod_ajaxchat_minimal_fail
+ *
+ * @param int $status
+ * @param string $message
+ * @return never
+ */
 function mod_ajaxchat_minimal_fail(int $status, string $message): never {
     http_response_code($status);
     header("Content-Type: application/json; charset=utf-8");
@@ -30,6 +37,11 @@ function mod_ajaxchat_minimal_fail(int $status, string $message): never {
     exit;
 }
 
+/**
+ * mod_ajaxchat_minimal_runtime
+ *
+ * @return array
+ */
 function mod_ajaxchat_minimal_runtime(): array {
     $runtimeid = isset($_REQUEST["runtime"]) ? (string)$_REQUEST["runtime"] : "";
     $readtoken = isset($_REQUEST["readtoken"]) ? (string)$_REQUEST["readtoken"] : "";
@@ -45,6 +57,12 @@ function mod_ajaxchat_minimal_runtime(): array {
 }
 
 
+/**
+ * mod_ajaxchat_minimal_store
+ *
+ * @param array $runtime
+ * @return chat_store
+ */
 function mod_ajaxchat_minimal_store(array $runtime): chat_store {
     $store = new chat_store((int)$runtime["chatid"]);
     if (empty($runtime["path"]) || !hash_equals($store->path(), (string)$runtime["path"])) {
@@ -53,6 +71,13 @@ function mod_ajaxchat_minimal_store(array $runtime): chat_store {
     return $store;
 }
 
+/**
+ * mod_ajaxchat_minimal_state
+ *
+ * @param chat_store $store
+ * @param array $runtime
+ * @return array
+ */
 function mod_ajaxchat_minimal_state(chat_store $store, array $runtime): array {
     $state = $store->get_state();
     $userid = (int)$runtime["userid"];

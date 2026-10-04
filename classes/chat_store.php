@@ -7,20 +7,27 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_ajaxchat\local;
+namespace mod_ajaxchat;
 
 use DirectoryIterator;
 use FilesystemIterator;
+use Random\RandomException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 
-defined("MOODLE_INTERNAL") || die();
-
+/**
+ * Class chat_store
+ */
 class chat_store {
+    /** @var int */
     private int $chatid;
+    /** @var string */
     private string $basepath;
 
+    /**
+     * @param int $chatid
+     */
     public function __construct(int $chatid) {
         global $CFG;
         $this->chatid = $chatid;
@@ -28,27 +35,59 @@ class chat_store {
         $this->ensure_directories();
     }
 
+    /**
+     * data_root
+     *
+     * @return string
+     */
     public static function data_root(): string {
         global $CFG;
         return rtrim($CFG->dataroot, "/\\") . "/mod_ajaxchat";
     }
 
+    /**
+     * instances_root
+     *
+     * @return string
+     */
     public static function instances_root(): string {
         return self::data_root() . "/chats";
     }
 
+    /**
+     * runtime_root
+     *
+     * @return string
+     */
     public static function runtime_root(): string {
         return self::data_root() . "/runtime";
     }
 
+    /**
+     * instance_path
+     *
+     * @param int $chatid
+     * @return string
+     */
     public static function instance_path(int $chatid): string {
         return self::instances_root() . "/" . $chatid;
     }
 
+    /**
+     * path
+     *
+     * @return string
+     */
     public function path(): string {
         return $this->basepath;
     }
 
+    /**
+     * initialise_state
+     *
+     * @param array $settings
+     * @return void
+     */
     public function initialise_state(array $settings): void {
         $state = [
             "chatid" => $this->chatid,
@@ -64,6 +103,11 @@ class chat_store {
         $this->write_json_atomic($this->basepath . "/state.json", $state);
     }
 
+    /**
+     * get_state
+     *
+     * @return array
+     */
     public function get_state(): array {
         $state = $this->read_json($this->basepath . "/state.json");
         if (!$state) {
@@ -73,6 +117,12 @@ class chat_store {
         return $state;
     }
 
+    /**
+     * merge_state
+     *
+     * @param array $changes
+     * @return array
+     */
     public function merge_state(array $changes): array {
         return $this->mutate_json($this->basepath . "/state.json", function (array $state) use ($changes): array {
             if (!$state) {
@@ -94,6 +144,12 @@ class chat_store {
         });
     }
 
+    /**
+     * mutate_state
+     *
+     * @param callable $callback
+     * @return array
+     */
     public function mutate_state(callable $callback): array {
         return $this->mutate_json($this->basepath . "/state.json", function (array $state) use ($callback): array {
             $state = $callback($state);
@@ -102,32 +158,77 @@ class chat_store {
         });
     }
 
+    /**
+     * write_message
+     *
+     * @param array $message
+     * @return void
+     */
     public function write_message(array $message): void {
         $id = (int)$message["id"];
         $this->write_json_atomic($this->message_path($id), $message);
         $this->remember_message($id);
     }
 
+    /**
+     * get_message
+     *
+     * @param int $messageid
+     * @return array
+     */
     public function get_message(int $messageid): array {
         return $this->read_json($this->message_path($messageid));
     }
 
+    /**
+     * mutate_message
+     *
+     * @param int $messageid
+     * @param callable $callback
+     * @return array
+     */
     public function mutate_message(int $messageid, callable $callback): array {
         return $this->mutate_json($this->message_path($messageid), $callback);
     }
 
+    /**
+     * write_poll
+     *
+     * @param int $pollid
+     * @param array $poll
+     * @return void
+     */
     public function write_poll(int $pollid, array $poll): void {
         $this->write_json_atomic($this->poll_path($pollid), $poll);
     }
 
+    /**
+     * get_poll
+     *
+     * @param int $pollid
+     * @return array
+     */
     public function get_poll(int $pollid): array {
         return $this->read_json($this->poll_path($pollid));
     }
 
+    /**
+     * mutate_poll
+     *
+     * @param int $pollid
+     * @param callable $callback
+     * @return array
+     */
     public function mutate_poll(int $pollid, callable $callback): array {
         return $this->mutate_json($this->poll_path($pollid), $callback);
     }
 
+    /**
+     * remove_poll
+     *
+     * @param int $pollid
+     * @return void
+     */
     public function remove_poll(int $pollid): void {
         $path = $this->poll_path($pollid);
         if (is_file($path)) {
@@ -135,6 +236,12 @@ class chat_store {
         }
     }
 
+    /**
+     * append_event
+     *
+     * @param array $event
+     * @return string
+     */
     public function append_event(array $event): string {
         $event["eventtime"] = time();
         $filename = "events-" . gmdate("Ymd") . ".jsonl";
@@ -160,6 +267,11 @@ class chat_store {
         return $filename . ":" . $offset;
     }
 
+    /**
+     * current_cursor
+     *
+     * @return string
+     */
     public function current_cursor(): string {
         $files = $this->event_files();
         if (!$files) {
@@ -171,6 +283,13 @@ class chat_store {
     }
 
 
+    /**
+     * clamp_cursor
+     *
+     * @param string $cursor
+     * @param string $minimum
+     * @return string
+     */
     public function clamp_cursor(string $cursor, string $minimum): string {
         [$minfile, $minoffset] = $this->parse_cursor($minimum);
         [$file, $offset] = $this->parse_cursor($cursor);
@@ -220,6 +339,13 @@ class chat_store {
         return $file . ":" . $offset;
     }
 
+    /**
+     * read_events
+     *
+     * @param string $cursor
+     * @param int $limit
+     * @return array
+     */
     public function read_events(string $cursor, int $limit = 200): array {
         $files = $this->event_files();
         if (!$files) {
@@ -287,6 +413,13 @@ class chat_store {
         return ["events" => $events, "cursor" => $newcursor];
     }
 
+    /**
+     * get_history
+     *
+     * @param int $userid
+     * @param int $limit
+     * @return array
+     */
     public function get_history(int $userid, int $limit = 100): array {
         $recent = $this->read_json($this->basepath . "/recent.json");
         $ids = array_values(array_filter(array_map("intval", $recent["ids"] ?? [])));
@@ -318,6 +451,13 @@ class chat_store {
         return $messages;
     }
 
+    /**
+     * prepare_message_for_client
+     *
+     * @param array $message
+     * @param int $userid
+     * @return array
+     */
     public function prepare_message_for_client(array $message, int $userid): array {
         $reactions = $message["reactionusers"] ?? [];
         $counts = [];
@@ -342,6 +482,13 @@ class chat_store {
         return $message;
     }
 
+    /**
+     * prepare_poll_for_client
+     *
+     * @param array $poll
+     * @param int $userid
+     * @return array
+     */
     public function prepare_poll_for_client(array $poll, int $userid): array {
         $votes = $poll["votes"] ?? [];
         $counts = [];
@@ -363,6 +510,16 @@ class chat_store {
         return $poll;
     }
 
+    /**
+     * store_upload
+     *
+     * @param string $source
+     * @param string $originalname
+     * @param string $mimetype
+     * @param string $kind
+     * @return array
+     * @throws RandomException
+     */
     public function store_upload(string $source, string $originalname, string $mimetype, string $kind): array {
         $maxbytes = $kind === "audio" ? 20 * 1024 * 1024 : 25 * 1024 * 1024;
         $size = filesize($source);
@@ -398,6 +555,12 @@ class chat_store {
         ];
     }
 
+    /**
+     * attachment_path
+     *
+     * @param string $filekey
+     * @return string|null
+     */
     public function attachment_path(string $filekey): ?string {
         if (!preg_match('/^[a-f0-9]{48}(?:\.[a-z0-9]{1,8})?$/', $filekey)) {
             return null;
@@ -406,6 +569,12 @@ class chat_store {
         return is_file($path) ? $path : null;
     }
 
+    /**
+     * remove_attachment
+     *
+     * @param array|null $attachment
+     * @return void
+     */
     public function remove_attachment(?array $attachment): void {
         if (empty($attachment["filekey"])) {
             return;
@@ -416,6 +585,13 @@ class chat_store {
         }
     }
 
+    /**
+     * write_runtime
+     *
+     * @param string $runtimeid
+     * @param array $runtime
+     * @return void
+     */
     public static function write_runtime(string $runtimeid, array $runtime): void {
         self::ensure_directory(self::runtime_root());
         $path = self::runtime_root() . "/" . $runtimeid . ".json";
@@ -424,6 +600,12 @@ class chat_store {
         self::write_static_json_atomic($path, $runtime);
     }
 
+    /**
+     * read_runtime
+     *
+     * @param string $runtimeid
+     * @return array
+     */
     public static function read_runtime(string $runtimeid): array {
         if (!preg_match('/^[a-f0-9]{64}$/', $runtimeid)) {
             return [];
@@ -440,12 +622,23 @@ class chat_store {
         return $data;
     }
 
+    /**
+     * delete_runtime
+     *
+     * @param string $runtimeid
+     * @return void
+     */
     public static function delete_runtime(string $runtimeid): void {
         if (preg_match('/^[a-f0-9]{64}$/', $runtimeid)) {
             @unlink(self::runtime_root() . "/" . $runtimeid . ".json");
         }
     }
 
+    /**
+     * cleanup_runtimes
+     *
+     * @return int
+     */
     public static function cleanup_runtimes(): int {
         self::ensure_directory(self::runtime_root());
         $deleted = 0;
@@ -460,6 +653,12 @@ class chat_store {
         return $deleted;
     }
 
+    /**
+     * remove_instance_directory
+     *
+     * @param int $chatid
+     * @return void
+     */
     public static function remove_instance_directory(int $chatid): void {
         $path = self::instance_path($chatid);
         if (!is_dir($path)) {
@@ -469,6 +668,12 @@ class chat_store {
     }
 
 
+    /**
+     * remember_message
+     *
+     * @param int $messageid
+     * @return void
+     */
     private function remember_message(int $messageid): void {
         $this->mutate_json($this->basepath . "/recent.json", function (array $recent) use ($messageid): array {
             $ids = array_values(array_filter(array_map("intval", $recent["ids"] ?? [])));
@@ -480,20 +685,43 @@ class chat_store {
         });
     }
 
+    /**
+     * message_path
+     *
+     * @param int $messageid
+     * @return string
+     */
     private function message_path(int $messageid): string {
         return $this->basepath . "/messages/" . $messageid . ".json";
     }
 
+    /**
+     * poll_path
+     *
+     * @param int $pollid
+     * @return string
+     */
     private function poll_path(int $pollid): string {
         return $this->basepath . "/polls/" . $pollid . ".json";
     }
 
+    /**
+     * event_files
+     *
+     * @return array
+     */
     private function event_files(): array {
         $files = glob($this->basepath . "/events/events-*.jsonl") ?: [];
         sort($files, SORT_STRING);
         return $files;
     }
 
+    /**
+     * parse_cursor
+     *
+     * @param string $cursor
+     * @return array
+     */
     private function parse_cursor(string $cursor): array {
         if (!preg_match('/^(events-\d{8}\.jsonl):(\d+)$/', $cursor, $matches)) {
             return ["", 0];
@@ -501,6 +729,11 @@ class chat_store {
         return [$matches[1], (int)$matches[2]];
     }
 
+    /**
+     * ensure_directories
+     *
+     * @return void
+     */
     private function ensure_directories(): void {
         foreach ([
                      self::data_root(),
@@ -517,12 +750,24 @@ class chat_store {
         }
     }
 
+    /**
+     * ensure_directory
+     *
+     * @param string $directory
+     * @return void
+     */
     private static function ensure_directory(string $directory): void {
         if (!is_dir($directory) && !mkdir($directory, 0770, true) && !is_dir($directory)) {
             throw new RuntimeException("Unable to create chat data directory.");
         }
     }
 
+    /**
+     * read_json
+     *
+     * @param string $path
+     * @return array
+     */
     private function read_json(string $path): array {
         if (!is_file($path)) {
             return [];
@@ -531,10 +776,25 @@ class chat_store {
         return is_array($data) ? $data : [];
     }
 
+    /**
+     * write_json_atomic
+     *
+     * @param string $path
+     * @param array $data
+     * @return void
+     */
     private function write_json_atomic(string $path, array $data): void {
         self::write_static_json_atomic($path, $data);
     }
 
+    /**
+     * write_static_json_atomic
+     *
+     * @param string $path
+     * @param array $data
+     * @return void
+     * @throws RandomException
+     */
     private static function write_static_json_atomic(string $path, array $data): void {
         self::ensure_directory(dirname($path));
         $tmp = $path . "." . bin2hex(random_bytes(6)) . ".tmp";
@@ -549,6 +809,13 @@ class chat_store {
         }
     }
 
+    /**
+     * mutate_json
+     *
+     * @param string $path
+     * @param callable $callback
+     * @return array
+     */
     private function mutate_json(string $path, callable $callback): array {
         $lockpath = $this->basepath . "/locks/" . sha1($path) . ".lock";
         $lock = fopen($lockpath, "c+");
@@ -572,6 +839,14 @@ class chat_store {
         }
     }
 
+    /**
+     * extension_for_mimetype
+     *
+     * @param string $mimetype
+     * @param string $originalname
+     * @param string $kind
+     * @return string
+     */
     private function extension_for_mimetype(string $mimetype, string $originalname, string $kind): string {
         $blockedmimes = [
             "text/html",
@@ -624,6 +899,12 @@ class chat_store {
         return "." . $extension;
     }
 
+    /**
+     * remove_directory
+     *
+     * @param string $path
+     * @return void
+     */
     private static function remove_directory(string $path): void {
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),

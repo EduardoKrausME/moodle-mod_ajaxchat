@@ -24,37 +24,13 @@
 
 defined("MOODLE_INTERNAL") || die();
 
+
+/**
+ * xmldb_ajaxchat_upgrade
+ *
+ * @param $oldversion
+ * @return true
+ */
 function xmldb_ajaxchat_upgrade($oldversion) {
-    global $DB;
-
-    $dbman = $DB->get_manager();
-
-    if ($oldversion < 2026091401) {
-        $table = new xmldb_table("ajaxchat");
-        $field = new xmldb_field("name", XMLDB_TYPE_CHAR, "255", null, XMLDB_NOTNULL, null, null, "course");
-        $dbman->change_field_default($table, $field);
-
-        $table = new xmldb_table("ajaxchat_reactions");
-        $field = new xmldb_field("reaction", XMLDB_TYPE_CHAR, "32", null, XMLDB_NOTNULL, null, null, "userid");
-        $dbman->change_field_default($table, $field);
-
-        $indexes = [
-            ["ajaxchat", "course_idx", ["course"]],
-            ["ajaxchat_messages", "user_idx", ["userid"]],
-            ["ajaxchat_reactions", "chat_idx", ["ajaxchatid"]],
-            ["ajaxchat_polls", "chat_idx", ["ajaxchatid"]],
-            ["ajaxchat_poll_options", "poll_idx", ["pollid"]],
-        ];
-        foreach ($indexes as [$tablename, $indexname, $fields]) {
-            $table = new xmldb_table($tablename);
-            $index = new xmldb_index($indexname, XMLDB_INDEX_NOTUNIQUE, $fields);
-            if ($dbman->index_exists($table, $index)) {
-                $dbman->drop_index($table, $index);
-            }
-        }
-
-        upgrade_mod_savepoint(true, 2026091401, "ajaxchat");
-    }
-
     return true;
 }

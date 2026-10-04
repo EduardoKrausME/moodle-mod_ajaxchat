@@ -22,7 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use mod_ajaxchat\local\chat_store;
+use mod_ajaxchat\chat_store;
 
 require_once(__DIR__ . "/../../config.php");
 

@@ -7,22 +7,34 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_ajaxchat\local;
+namespace mod_ajaxchat;
 
+use coding_exception;
 use core_text;
+use dml_exception;
+use dml_transaction_exception;
 use finfo;
 use invalid_parameter_exception;
 use moodle_exception;
 use RuntimeException;
 use Throwable;
 
-defined("MOODLE_INTERNAL") || die();
-
+/**
+ * class action_service
+ */
 class action_service {
+    /** @var array */
     private array $runtime;
+    /** @var chat_store */
     private chat_store $store;
+    /** @var int */
     private int $userid;
 
+    /**
+     * @param array $runtime
+     * @param int $userid
+     * @throws moodle_exception
+     */
     public function __construct(array $runtime, int $userid) {
         $this->runtime = $runtime;
         $this->userid = $userid;
@@ -33,6 +45,15 @@ class action_service {
         }
     }
 
+    /**
+     * execute
+     *
+     * @param string $action
+     * @return array
+     * @throws Throwable
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     public function execute(string $action): array {
         switch ($action) {
             case "send":
@@ -58,6 +79,15 @@ class action_service {
         }
     }
 
+    /**
+     * send_message
+     *
+     * @return array
+     * @throws Throwable
+     * @throws coding_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function send_message(): array {
         global $DB;
 
@@ -153,6 +183,15 @@ class action_service {
         }
     }
 
+    /**
+     * edit_message
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function edit_message(): array {
         global $DB;
 
@@ -194,6 +233,16 @@ class action_service {
         return ["ok" => true, "message" => $this->store->prepare_message_for_client($updated, $this->userid), "cursor" => $cursor];
     }
 
+    /**
+     * delete_message
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws dml_transaction_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function delete_message(): array {
         global $DB;
 
@@ -251,6 +300,16 @@ class action_service {
         ];
     }
 
+    /**
+     * react_to_message
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws dml_transaction_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function react_to_message(): array {
         global $DB;
 
@@ -303,6 +362,14 @@ class action_service {
         return ["ok" => true, "message" => $this->store->prepare_message_for_client($updated, $this->userid), "cursor" => $cursor];
     }
 
+    /**
+     * toggle_chat
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws moodle_exception
+     */
     private function toggle_chat(): array {
         global $DB;
 
@@ -324,6 +391,16 @@ class action_service {
         return ["ok" => true, "enabled" => (bool)$enabled, "cursor" => $cursor];
     }
 
+    /**
+     * block_user
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws dml_transaction_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function block_user(): array {
         global $DB;
 
@@ -366,6 +443,16 @@ class action_service {
         return ["ok" => true, "userid" => $targetuserid, "blocked" => (bool)$blocked, "cursor" => $cursor, "updated" => $state["updated"]];
     }
 
+    /**
+     * create_poll
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws dml_transaction_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function create_poll(): array {
         global $DB;
 
@@ -462,6 +549,16 @@ class action_service {
         return ["ok" => true, "message" => $clientmessage, "cursor" => $cursor];
     }
 
+    /**
+     * vote_poll
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws dml_transaction_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function vote_poll(): array {
         global $DB;
 
@@ -503,6 +600,15 @@ class action_service {
         return ["ok" => true, "poll" => $this->store->prepare_poll_for_client($updated, $this->userid), "cursor" => $cursor];
     }
 
+    /**
+     * close_poll
+     *
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws invalid_parameter_exception
+     * @throws moodle_exception
+     */
     private function close_poll(): array {
         global $DB;
 
@@ -532,6 +638,13 @@ class action_service {
         return ["ok" => true, "poll" => $this->store->prepare_poll_for_client($updated, $this->userid), "cursor" => $cursor];
     }
 
+    /**
+     * require_message
+     *
+     * @param int $messageid
+     * @return array
+     * @throws invalid_parameter_exception
+     */
     private function require_message(int $messageid): array {
         $message = $this->store->get_message($messageid);
         if (!$message || (int)($message["id"] ?? 0) !== $messageid) {
@@ -540,6 +653,12 @@ class action_service {
         return $message;
     }
 
+    /**
+     * require_chat_writable
+     *
+     * @return array
+     * @throws moodle_exception
+     */
     private function require_chat_writable(): array {
         $state = $this->store->get_state();
         $canmanage = !empty($this->runtime["canmanage"]);
@@ -555,18 +674,36 @@ class action_service {
         return $state;
     }
 
+    /**
+     * require_send_permission
+     *
+     * @return void
+     * @throws moodle_exception
+     */
     private function require_send_permission(): void {
         if (empty($this->runtime["cansend"])) {
             throw new moodle_exception("nopermissions", "error");
         }
     }
 
+    /**
+     * require_manage_permission
+     *
+     * @return void
+     * @throws moodle_exception
+     */
     private function require_manage_permission(): void {
         if (empty($this->runtime["canmanage"])) {
             throw new moodle_exception("nopermissions", "error");
         }
     }
 
+    /**
+     * require_poll_permission
+     *
+     * @return void
+     * @throws moodle_exception
+     */
     private function require_poll_permission(): void {
         if (empty($this->runtime["cancreatepoll"])) {
             throw new moodle_exception("nopermissions", "error");

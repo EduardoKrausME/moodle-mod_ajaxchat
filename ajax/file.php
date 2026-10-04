@@ -68,7 +68,8 @@ header("Accept-Ranges: bytes");
 header("Content-Length: " . $length);
 header("Cache-Control: private, max-age=300");
 header("X-Content-Type-Options: nosniff");
-$inline = str_starts_with($mimetype, "audio/") || in_array($mimetype, ["video/webm", "image/jpeg", "image/png", "image/gif", "image/webp"], true);
+$inline = str_starts_with($mimetype, "audio/") || in_array($mimetype,
+        ["video/webm", "image/jpeg", "image/png", "image/gif", "image/webp"], true);
 header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=\"file\"");
 if ($status === 206) {
     header("Content-Range: bytes {$start}-{$end}/{$size}");

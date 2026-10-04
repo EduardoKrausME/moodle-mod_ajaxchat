@@ -22,10 +22,14 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use mod_ajaxchat\local\chat_store;
+use mod_ajaxchat\chat_store;
 
-defined("MOODLE_INTERNAL") || die();
-
+/**
+ * ajaxchat_supports
+ *
+ * @param $feature
+ * @return bool|int|string|null
+ */
 function ajaxchat_supports($feature) {
     switch ($feature) {
         case FEATURE_MOD_ARCHETYPE:
@@ -47,6 +51,14 @@ function ajaxchat_supports($feature) {
     }
 }
 
+/**
+ * ajaxchat_add_instance
+ *
+ * @param $data
+ * @param $mform
+ * @return bool|int
+ * @throws dml_exception
+ */
 function ajaxchat_add_instance($data, $mform = null) {
     global $DB;
 
@@ -67,6 +79,14 @@ function ajaxchat_add_instance($data, $mform = null) {
     return $data->id;
 }
 
+/**
+ * ajaxchat_update_instance
+ *
+ * @param $data
+ * @param $mform
+ * @return true
+ * @throws dml_exception
+ */
 function ajaxchat_update_instance($data, $mform = null) {
     global $DB;
 
@@ -84,6 +104,13 @@ function ajaxchat_update_instance($data, $mform = null) {
     return true;
 }
 
+/**
+ * ajaxchat_delete_instance
+ *
+ * @param $id
+ * @return bool
+ * @throws dml_exception
+ */
 function ajaxchat_delete_instance($id) {
     global $DB;
 
@@ -107,6 +134,13 @@ function ajaxchat_delete_instance($id) {
     return true;
 }
 
+/**
+ * ajaxchat_get_coursemodule_info
+ *
+ * @param $coursemodule
+ * @return cached_cm_info|null
+ * @throws dml_exception
+ */
 function ajaxchat_get_coursemodule_info($coursemodule) {
     global $DB;
 

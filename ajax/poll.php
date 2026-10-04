@@ -38,7 +38,12 @@ $cursor = isset($_GET["cursor"]) ? (string)$_GET["cursor"] : "";
 $cursor = $store->clamp_cursor($cursor, (string)($runtime["startcursor"] ?? $store->current_cursor()));
 
 if (!empty($state["locked"])) {
-    echo json_encode(["ok" => true, "events" => [], "cursor" => $store->current_cursor(), "state" => $state], JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        "ok" => true,
+        "events" => [],
+        "cursor" => $store->current_cursor(),
+        "state" => $state,
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -63,7 +68,8 @@ foreach ($result["events"] as $event) {
             $event["poll"] = $store->prepare_poll_for_client($poll, (int)$runtime["userid"]);
         }
     }
-    if (($event["type"] ?? "") === "block" && empty($runtime["canmanage"]) && (int)($event["userid"] ?? 0) !== (int)$runtime["userid"]) {
+    if (($event["type"] ?? "") === "block" && empty($runtime["canmanage"]) &&
+        (int)($event["userid"] ?? 0) !== (int)$runtime["userid"]) {
         continue;
     }
     $events[] = $event;
