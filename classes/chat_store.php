@@ -762,6 +762,11 @@ class chat_store {
         }
     }
 
+    /**
+     * Remove expired legacy runtime files.
+     *
+     * @return int Number of removed files.
+     */
     public static function cleanup_runtimes(): int {
         self::ensure_directory(self::runtime_root());
         $deleted = 0;

@@ -23,7 +23,6 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
 
 /**
  * Restore the chat activity and reconstruct the file-backed cache.
@@ -96,7 +95,8 @@ class restore_ajaxchat_activity_structure_step extends restore_activity_structur
                 'filemeta' => json_encode($attachment),
             ]);
         }
-        $user = $DB->get_record('user', ['id' => $data->userid], 'id,firstname,lastname,firstnamephonetic,lastnamephonetic,middlename,alternatename');
+        $user = $DB->get_record('user', ['id' => $data->userid],
+            'id,firstname,lastname,firstnamephonetic,lastnamephonetic,middlename,alternatename');
         $store = new \mod_ajaxchat\chat_store($this->chatid);
         $store->write_message([
             'id' => $newid,
