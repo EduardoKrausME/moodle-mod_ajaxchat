@@ -23,7 +23,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-
 $string['ajaxchat:addinstance'] = 'Add a new AJAX Chat';
 $string['ajaxchat:createpoll'] = 'Create polls in AJAX Chat';
 $string['ajaxchat:manage'] = 'Manage AJAX Chat';
@@ -84,6 +83,11 @@ $string['pollquestion'] = 'Question';
 $string['pollside'] = 'Side';
 $string['polltop'] = 'Top';
 $string['privacy:metadata:blocks'] = 'Chat blocks applied to users.';
+$string['privacy:metadata:core_files'] = 'Attachments and recordings uploaded by chat participants.';
+$string['privacy:metadata:localevents'] = 'Incremental activity events, including user identifiers.';
+$string['privacy:metadata:localmessages'] = 'Cached messages, including author names and avatar URLs.';
+$string['privacy:metadata:localpolls'] = 'Cached polls, including the identities of voters.';
+$string['privacy:metadata:localstore'] = 'Private chat runtime data stored under Moodle data root.';
 $string['privacy:metadata:messages'] = 'Messages sent by users.';
 $string['privacy:metadata:messages:filemeta'] = 'Metadata about an attached file or audio message.';
 $string['privacy:metadata:messages:message'] = 'The message content.';
@@ -98,4 +102,3 @@ $string['taskcleanup'] = 'Clean up expired AJAX Chat sessions';
 $string['unblock'] = 'Unblock';
 $string['vote'] = 'Vote';
 $string['you'] = 'You';
-

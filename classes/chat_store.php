@@ -668,6 +668,89 @@ class chat_store {
      *
      * @return int
      */
+    /**
+     * Remove legacy disk runtimes for a user during privacy deletion.
+     *
+     * @param int $userid User identifier.
+     * @return void
+     */
+    public static function purge_user_runtimes(int $userid): void {
+        foreach (glob(self::runtime_root() . "/*.json") ?: [] as $path) {
+            $runtime = json_decode((string)@file_get_contents($path), true);
+            if (is_array($runtime) && (int)($runtime["userid"] ?? 0) === $userid) {
+                @unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Export all personal event references for a user.
+     *
+     * @param int $userid User identifier.
+     * @return array
+     */
+    public function user_events(int $userid): array {
+        $events = [];
+        foreach ($this->event_files() as $path) {
+            $handle = fopen($path, "rb");
+            if (!$handle) {
+                continue;
+            }
+            while (($line = fgets($handle)) !== false) {
+                $event = json_decode($line, true);
+                if (is_array($event) && (int)($event["userid"] ?? 0) === $userid) {
+                    $events[] = $event;
+                }
+            }
+            fclose($handle);
+        }
+        return $events;
+    }
+
+    /**
+     * Replace personal event lines without shifting active polling cursors.
+     *
+     * @param int $userid User identifier.
+     * @return void
+     */
+    public function anonymise_user_events(int $userid): void {
+        foreach ($this->event_files() as $path) {
+            $handle = fopen($path, "c+");
+            if (!$handle) {
+                continue;
+            }
+            if (!flock($handle, LOCK_EX)) {
+                fclose($handle);
+                continue;
+            }
+            rewind($handle);
+            while (!feof($handle)) {
+                $start = ftell($handle);
+                $line = fgets($handle);
+                if ($line === false) {
+                    break;
+                }
+                $end = ftell($handle);
+                $event = json_decode($line, true);
+                if (!is_array($event) || (int)($event["userid"] ?? 0) !== $userid) {
+                    continue;
+                }
+                $replacement = json_encode(["type" => "redacted"]);
+                $width = strlen(rtrim($line, "\r\n"));
+                if (strlen($replacement) > $width) {
+                    continue;
+                }
+                $ending = substr($line, $width);
+                fseek($handle, $start);
+                fwrite($handle, str_pad($replacement, $width) . $ending);
+                fseek($handle, $end);
+            }
+            fflush($handle);
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
     public static function cleanup_runtimes(): int {
         self::ensure_directory(self::runtime_root());
         $deleted = 0;

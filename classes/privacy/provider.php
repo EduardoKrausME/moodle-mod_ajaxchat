@@ -71,6 +71,12 @@ class provider implements
             "blockedby" => "privacy:metadata:blocks",
             "timecreated" => "privacy:metadata:messages:timecreated",
         ], "privacy:metadata:blocks");
+        $collection->add_subsystem_link("core_files", [], "privacy:metadata:core_files");
+        $collection->add_external_location_link("mod_ajaxchat_local_data", [
+            "messages" => "privacy:metadata:localmessages",
+            "polls" => "privacy:metadata:localpolls",
+            "events" => "privacy:metadata:localevents",
+        ], "privacy:metadata:localstore");
         return $collection;
     }
 
@@ -148,6 +154,22 @@ class provider implements
                 "timecreated ASC"
             );
 
+            $store = new chat_store((int)$cm->instance);
+            $contentwriter = writer::with_context($context);
+            foreach ($messages as $message) {
+                $subcontext = ["Message " . $message->id];
+                $metadata = json_decode((string)($message->filemeta ?? ""), true);
+                if (!empty($metadata["filekey"]) && ctype_digit((string)$metadata["filekey"])) {
+                    $contentwriter->export_area_files($subcontext, "mod_ajaxchat", "attachment", $message->id);
+                } else if (!empty($metadata["filekey"])) {
+                    $path = $store->attachment_path((string)$metadata["filekey"]);
+                    if ($path) {
+                        $contentwriter->export_custom_file($subcontext,
+                            (string)($metadata["filename"] ?? "attachment"), (string)file_get_contents($path));
+                    }
+                }
+            }
+            $contentwriter->export_data(["Events"], (object)["events" => $store->user_events((int)$userid)]);
             writer::with_context($context)->export_data([], (object)[
                 "messages" => array_values($messages),
                 "reactions" => array_values($reactions),
@@ -187,6 +209,7 @@ class provider implements
         $DB->delete_records("ajaxchat_blocks", ["ajaxchatid" => $cm->instance]);
         $DB->delete_records("ajaxchat_messages", ["ajaxchatid" => $cm->instance]);
 
+        get_file_storage()->delete_area_files($context->id, "mod_ajaxchat", "attachment");
         chat_store::remove_instance_directory((int)$cm->instance);
         $store = new chat_store((int)$cm->instance);
         $store->initialise_state([]);
@@ -296,6 +319,7 @@ class provider implements
                     $current["deleted"] = true;
                     $current["author"] = "";
                     $current["avatar"] = "";
+                    $current["userid"] = 0;
                     return $current;
                 });
             }
@@ -357,6 +381,9 @@ class provider implements
             "ajaxchatid = :chatid AND (userid = :userid1 OR blockedby = :userid2)",
             ["chatid" => $chatid, "userid1" => $userid, "userid2" => $userid]
         );
+
+        $store->anonymise_user_events($userid);
+        chat_store::purge_user_runtimes($userid);
 
         $store->mutate_state(function (array $state) use ($userid): array {
             unset($state["blocked"][(string)$userid]);
