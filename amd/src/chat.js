@@ -51,8 +51,7 @@ define(["jquery"], function ($) {
     var fileUrl = function (filekey) {
         return config.fileUrl + "?" + $.param({
             runtime: config.runtime,
-            readtoken: config.readtoken,
-            file: filekey
+                        file: filekey
         });
     };
 
@@ -257,12 +256,12 @@ define(["jquery"], function ($) {
             if (message.attachment && message.attachment.filekey) {
                 if (message.attachment.kind === "audio") {
                     var audio = $("<audio>", {controls: true, preload: "metadata", class: "ajaxchat-audio"});
-                    audio.attr("src", fileUrl(message.attachment.filekey));
+                    audio.attr("src", message.attachment.url || fileUrl(message.attachment.filekey));
                     bubble.append(audio);
                 } else {
                     var link = $("<a>", {
                         class: "ajaxchat-attachment",
-                        href: fileUrl(message.attachment.filekey),
+                        href: message.attachment.url || fileUrl(message.attachment.filekey),
                         target: "_blank",
                         rel: "noopener"
                     });
@@ -467,7 +466,7 @@ define(["jquery"], function ($) {
             url: config.historyUrl,
             method: "GET",
             dataType: "json",
-            data: {runtime: config.runtime, readtoken: config.readtoken}
+            data: {runtime: config.runtime}
         }).done(function (response) {
             if (!response.ok) {
                 showNotice(response.error || config.strings.errorloadchat);
@@ -516,8 +515,7 @@ define(["jquery"], function ($) {
             cache: false,
             data: {
                 runtime: config.runtime,
-                readtoken: config.readtoken,
-                cursor: cursor
+                                cursor: cursor
             }
         }).done(function (response) {
             if (!response.ok) {

@@ -486,6 +486,17 @@ class chat_store {
             }
         }
         unset($message["reactionusers"]);
+        if (!empty($message["attachment"]["filekey"]) &&
+            ctype_digit((string)$message["attachment"]["filekey"])) {
+            $cm = get_coursemodule_from_instance("ajaxchat", $this->chatid, 0, false, IGNORE_MISSING);
+            if ($cm) {
+                $context = \context_module::instance($cm->id);
+                $message["attachment"]["url"] = \moodle_url::make_pluginfile_url(
+                    $context->id, "mod_ajaxchat", "attachment",
+                    (int)$message["attachment"]["filekey"], "/", $message["attachment"]["filename"]
+                )->out(false);
+            }
+        }
         $message["reactions"] = $counts;
         $message["myreaction"] = $myreaction;
 

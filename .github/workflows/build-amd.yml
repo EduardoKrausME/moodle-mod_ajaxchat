@@ -1,0 +1,50 @@
+name: Generate Moodle AMD build
+
+on:
+  push:
+    paths:
+      - 'amd/src/**'
+      - '.github/workflows/build-amd.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  grunt:
+    if: "!startsWith(github.event.head_commit.message, 'chore(amd):')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+          persist-credentials: true
+      - name: Checkout Moodle for its Grunt tooling
+        uses: actions/checkout@v4
+        with:
+          repository: moodle/moodle
+          ref: MOODLE_405_STABLE
+          path: moodle
+      - name: Use Node.js from Moodle
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: moodle/.nvmrc
+          cache: npm
+          cache-dependency-path: moodle/package-lock.json
+      - name: Build AMD modules using Moodle Grunt
+        run: |
+          cp -R plugin moodle/mod/ajaxchat
+          cd moodle
+          npm ci --no-audit --no-fund
+          npx grunt amd --root=mod/ajaxchat
+          cp -R mod/ajaxchat/amd/build/. ../plugin/amd/build/
+      - name: Commit generated AMD files to master
+        working-directory: plugin
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add amd/build
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(amd): regenerate chat JavaScript with Moodle Grunt"
+            git push origin HEAD:master
+          fi
