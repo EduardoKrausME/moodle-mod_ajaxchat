@@ -44,15 +44,19 @@ class action_service {
     private chat_store $store;
     /** @var int */
     private int $userid;
+    /** @var array|null Parameters passed through a Moodle external function. */
+    private ?array $input;
 
     /**
      * __construct
      *
      * @param array $runtime
      * @param int $userid
+     * @param array|null $input Structured parameters or null for the multipart endpoint.
      * @throws moodle_exception
      */
-    public function __construct(array $runtime, int $userid) {
+    public function __construct(array $runtime, int $userid, ?array $input = null) {
+        $this->input = $input;
         $this->runtime = $runtime;
         $this->userid = $userid;
         $this->store = new chat_store((int)$runtime["chatid"]);
@@ -106,9 +110,9 @@ class action_service {
 
         $this->require_send_permission();
         $state = $this->require_chat_writable();
-        $message = trim((string)optional_param("message", "", PARAM_RAW));
+        $message = trim((string)$this->optional_input("message", "", PARAM_RAW));
         $message = core_text::substr($message, 0, 5000);
-        $uploadkind = optional_param("uploadkind", "", PARAM_ALPHA);
+        $uploadkind = $this->optional_input("uploadkind", "", PARAM_ALPHA);
         $attachment = null;
         $upload = null;
 
@@ -238,8 +242,8 @@ class action_service {
 
         $this->require_send_permission();
         $this->require_chat_writable();
-        $messageid = required_param("messageid", PARAM_INT);
-        $text = trim((string)required_param("message", PARAM_RAW));
+        $messageid = $this->required_input("messageid", PARAM_INT);
+        $text = trim((string)$this->required_input("message", PARAM_RAW));
         $text = core_text::substr($text, 0, 5000);
         if ($text === "") {
             throw new invalid_parameter_exception("Message cannot be empty.");
@@ -290,7 +294,7 @@ class action_service {
         if (empty($this->runtime["canmanage"])) {
             $this->require_send_permission();
         }
-        $messageid = required_param("messageid", PARAM_INT);
+        $messageid = $this->required_input("messageid", PARAM_INT);
         $current = $this->require_message($messageid);
         $canmanage = !empty($this->runtime["canmanage"]);
         $ownwithinwindow = (int)$current["userid"] === $this->userid && time() - (int)$current["timecreated"] <= 60;
@@ -356,8 +360,8 @@ class action_service {
 
         $this->require_send_permission();
         $this->require_chat_writable();
-        $messageid = required_param("messageid", PARAM_INT);
-        $reaction = (string)required_param("reaction", PARAM_RAW_TRIMMED);
+        $messageid = $this->required_input("messageid", PARAM_INT);
+        $reaction = (string)$this->required_input("reaction", PARAM_RAW_TRIMMED);
         $allowed = ["👍", "❤️", "😂", "😮", "😢", "👏"];
         if (!in_array($reaction, $allowed, true)) {
             throw new invalid_parameter_exception("Unsupported reaction.");
@@ -415,7 +419,7 @@ class action_service {
         global $DB;
 
         $this->require_manage_permission();
-        $enabled = required_param("enabled", PARAM_BOOL);
+        $enabled = $this->required_input("enabled", PARAM_BOOL);
 
         $DB->update_record("ajaxchat", (object)[
             "id" => (int)$this->runtime["chatid"],
@@ -446,8 +450,8 @@ class action_service {
         global $DB;
 
         $this->require_manage_permission();
-        $targetuserid = required_param("userid", PARAM_INT);
-        $blocked = required_param("blocked", PARAM_BOOL);
+        $targetuserid = $this->required_input("userid", PARAM_INT);
+        $blocked = $this->required_input("blocked", PARAM_BOOL);
         $context = \context_module::instance((int)$this->runtime["cmid"]);
         $participants = get_enrolled_users($context, "mod/ajaxchat:view", 0, "u.id");
         if ($targetuserid === $this->userid || !isset($participants[$targetuserid]) ||
@@ -504,13 +508,13 @@ class action_service {
         global $DB;
 
         $this->require_poll_permission();
-        $question = trim((string)required_param("question", PARAM_TEXT));
+        $question = trim((string)$this->required_input("question", PARAM_TEXT));
         $question = core_text::substr($question, 0, 500);
-        $position = optional_param("position", "top", PARAM_ALPHA);
+        $position = $this->optional_input("position", "top", PARAM_ALPHA);
         if (!in_array($position, ["top", "side"], true)) {
             $position = "top";
         }
-        $rawoptions = optional_param_array("options", [], PARAM_TEXT);
+        $rawoptions = $this->optional_input_array("options", [], PARAM_TEXT);
         $options = [];
         foreach ($rawoptions as $option) {
             $option = trim(clean_param((string)$option, PARAM_TEXT));
@@ -611,8 +615,8 @@ class action_service {
 
         $this->require_send_permission();
         $this->require_chat_writable();
-        $pollid = required_param("pollid", PARAM_INT);
-        $optionid = required_param("optionid", PARAM_INT);
+        $pollid = $this->required_input("pollid", PARAM_INT);
+        $optionid = $this->required_input("optionid", PARAM_INT);
         $poll = $this->store->get_poll($pollid);
         if (!$poll || !empty($poll["closed"])) {
             throw new invalid_parameter_exception("Poll is closed.");
@@ -660,7 +664,7 @@ class action_service {
         global $DB;
 
         $this->require_poll_permission();
-        $pollid = required_param("pollid", PARAM_INT);
+        $pollid = $this->required_input("pollid", PARAM_INT);
         $poll = $this->store->get_poll($pollid);
         if (!$poll) {
             throw new invalid_parameter_exception("Poll not found.");
@@ -766,5 +770,69 @@ class action_service {
         if (empty($this->runtime["cancreatepoll"])) {
             throw new moodle_exception("nopermissions", "error");
         }
+    }
+
+    /**
+     * Obtain a required scalar value from validated service data or the upload request.
+     *
+     * @param string $name Parameter name.
+     * @param int $type Moodle PARAM_* type.
+     * @return mixed
+     */
+    private function required_input(string $name, int $type) {
+        if ($this->input === null) {
+            return \required_param($name, $type);
+        }
+        if (!array_key_exists($name, $this->input) || is_array($this->input[$name])) {
+            throw new invalid_parameter_exception("Missing or invalid action parameter: " . $name);
+        }
+        return clean_param($this->input[$name], $type);
+    }
+
+    /**
+     * Obtain an optional scalar value from the matching request source.
+     *
+     * @param string $name Parameter name.
+     * @param mixed $default Default value.
+     * @param int $type Moodle PARAM_* type.
+     * @return mixed
+     */
+    private function optional_input(string $name, $default, int $type) {
+        if ($this->input === null) {
+            return \optional_param($name, $default, $type);
+        }
+        if (!array_key_exists($name, $this->input)) {
+            return $default;
+        }
+        if (is_array($this->input[$name])) {
+            throw new invalid_parameter_exception("Invalid action parameter: " . $name);
+        }
+        return clean_param($this->input[$name], $type);
+    }
+
+    /**
+     * Obtain an optional array from the matching request source.
+     *
+     * @param string $name Parameter name.
+     * @param array $default Default values.
+     * @param int $type Moodle PARAM_* type.
+     * @return array
+     */
+    private function optional_input_array(string $name, array $default, int $type): array {
+        if ($this->input === null) {
+            return \optional_param_array($name, $default, $type);
+        }
+        if (!array_key_exists($name, $this->input)) {
+            return $default;
+        }
+        if (!is_array($this->input[$name])) {
+            throw new invalid_parameter_exception("Invalid action parameter: " . $name);
+        }
+        return array_map(static function ($value) use ($type) {
+            if (!is_scalar($value)) {
+                throw new invalid_parameter_exception("Invalid action array item.");
+            }
+            return clean_param($value, $type);
+        }, $this->input[$name]);
     }
 }
