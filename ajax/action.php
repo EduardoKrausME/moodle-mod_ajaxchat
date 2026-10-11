@@ -22,7 +22,6 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// phpcs:disable moodle.Files.RequireLogin.Missing
 use core\session\manager;
 use mod_ajaxchat\action_service;
 use mod_ajaxchat\chat_store;
@@ -49,9 +48,21 @@ try {
         empty($runtime["csrf"]) || !hash_equals((string)$runtime["csrf"], $csrf) ||
         (int)($runtime["userid"] ?? 0) !== (int)$USER->id) {
         unset($SESSION->mod_ajaxchat_runtimes[$runtimeid]);
-        chat_store::delete_runtime($runtimeid);
         throw new moodle_exception("errorinvalidruntime", "mod_ajaxchat");
     }
+
+    $cm = get_coursemodule_from_id("ajaxchat", (int)$runtime["cmid"], 0, false, MUST_EXIST);
+    $course = get_course($cm->course);
+    require_login($course, true, $cm);
+    $context = context_module::instance($cm->id);
+    require_capability("mod/ajaxchat:view", $context);
+    if ((int)$cm->instance !== (int)$runtime["chatid"]) {
+        throw new moodle_exception("errorinvalidruntime", "mod_ajaxchat");
+    }
+    $PAGE->set_context($context);
+    $runtime["cansend"] = has_capability("mod/ajaxchat:send", $context);
+    $runtime["canmanage"] = has_capability("mod/ajaxchat:manage", $context);
+    $runtime["cancreatepoll"] = has_capability("mod/ajaxchat:createpoll", $context);
 
     manager::write_close();
 

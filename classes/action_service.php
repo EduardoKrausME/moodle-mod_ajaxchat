@@ -57,9 +57,6 @@ class action_service {
         $this->userid = $userid;
         $this->store = new chat_store((int)$runtime["chatid"]);
 
-        if (($runtime["path"] ?? "") !== $this->store->path()) {
-            throw new moodle_exception("errorinvalidruntime", "mod_ajaxchat");
-        }
     }
 
     /**
@@ -183,8 +180,8 @@ class action_service {
             $clientmessage = [
                 "id" => $messageid,
                 "userid" => $this->userid,
-                "author" => (string)$this->runtime["fullname"],
-                "avatar" => (string)$this->runtime["avatar"],
+                "author" => fullname($GLOBALS["USER"]),
+                "avatar" => $this->current_user_avatar(),
                 "type" => $type,
                 "message" => $message,
                 "attachment" => $attachment,
@@ -437,10 +434,10 @@ class action_service {
         $this->require_manage_permission();
         $targetuserid = required_param("userid", PARAM_INT);
         $blocked = required_param("blocked", PARAM_BOOL);
-        $participants = array_map("intval", $this->runtime["participantids"] ?? []);
-        $blockable = array_map("intval", $this->runtime["blockableids"] ?? []);
-        if ($targetuserid === $this->userid || !in_array($targetuserid, $participants, true) ||
-            !in_array($targetuserid, $blockable, true)) {
+        $context = \context_module::instance((int)$this->runtime["cmid"]);
+        $participants = get_enrolled_users($context, "mod/ajaxchat:view", 0, "u.id");
+        if ($targetuserid === $this->userid || !isset($participants[$targetuserid]) ||
+            has_capability("mod/ajaxchat:manage", $context, $targetuserid)) {
             throw new invalid_parameter_exception("Invalid participant.");
         }
 
@@ -559,8 +556,8 @@ class action_service {
         $message = [
             "id" => $messageid,
             "userid" => $this->userid,
-            "author" => (string)$this->runtime["fullname"],
-            "avatar" => (string)$this->runtime["avatar"],
+            "author" => fullname($GLOBALS["USER"]),
+            "avatar" => $this->current_user_avatar(),
             "type" => "poll",
             "message" => $question,
             "attachment" => null,
@@ -695,6 +692,12 @@ class action_service {
      * @return array
      * @throws moodle_exception
      */
+    private function current_user_avatar(): string {
+        $picture = new \user_picture($GLOBALS["USER"]);
+        $picture->size = 64;
+        return $picture->get_url($GLOBALS["PAGE"])->out(false);
+    }
+
     private function require_chat_writable(): array {
         $state = $this->store->get_state();
         $canmanage = !empty($this->runtime["canmanage"]);

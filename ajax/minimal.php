@@ -17,7 +17,7 @@
 use mod_ajaxchat\chat_store;
 
 /**
- * Shared helpers for database-free read endpoints.
+ * Shared helpers for authenticated read endpoints.
  *
  * @package mod_ajaxchat
  * @copyright 2026 Eduardo Kraus
@@ -44,16 +44,30 @@ function mod_ajaxchat_minimal_fail(int $status, string $message): never {
  * @return array
  */
 function mod_ajaxchat_minimal_runtime(): array {
-    $runtimeid = isset($_REQUEST["runtime"]) ? (string)$_REQUEST["runtime"] : "";
-    $readtoken = isset($_REQUEST["readtoken"]) ? (string)$_REQUEST["readtoken"] : "";
-    if (!preg_match('/^[a-f0-9]{64}$/', $runtimeid) || !preg_match('/^[a-f0-9]{64}$/', $readtoken)) {
-        mod_ajaxchat_minimal_fail(403, "Invalid runtime.");
+    global $SESSION, $USER;
+
+    $runtimeid = required_param("runtime", PARAM_ALPHANUMEXT);
+    if (!preg_match('/^[a-f0-9]{64}$/', $runtimeid) ||
+        empty($SESSION->mod_ajaxchat_runtimes[$runtimeid])) {
+        mod_ajaxchat_minimal_fail(403, get_string("errorinvalidruntime", "mod_ajaxchat"));
+    }
+    $runtime = $SESSION->mod_ajaxchat_runtimes[$runtimeid];
+    if ((int)($runtime["expires"] ?? 0) < time() ||
+        (int)($runtime["userid"] ?? 0) !== (int)$USER->id) {
+        unset($SESSION->mod_ajaxchat_runtimes[$runtimeid]);
+        mod_ajaxchat_minimal_fail(403, get_string("errorinvalidruntime", "mod_ajaxchat"));
     }
 
-    $runtime = chat_store::read_runtime($runtimeid);
-    if (!$runtime || empty($runtime["readtoken"]) || !hash_equals((string)$runtime["readtoken"], $readtoken)) {
-        mod_ajaxchat_minimal_fail(403, "Expired runtime.");
+    $cm = get_coursemodule_from_id("ajaxchat", (int)$runtime["cmid"], 0, false, MUST_EXIST);
+    $course = get_course($cm->course);
+    require_login($course, true, $cm);
+    $context = \context_module::instance($cm->id);
+    require_capability("mod/ajaxchat:view", $context);
+    if ((int)$cm->instance !== (int)$runtime["chatid"]) {
+        mod_ajaxchat_minimal_fail(403, get_string("errorinvalidruntime", "mod_ajaxchat"));
     }
+    $runtime["canmanage"] = has_capability("mod/ajaxchat:manage", $context);
+    \core\session\manager::write_close();
     return $runtime;
 }
 
@@ -66,9 +80,6 @@ function mod_ajaxchat_minimal_runtime(): array {
  */
 function mod_ajaxchat_minimal_store(array $runtime): chat_store {
     $store = new chat_store((int)$runtime["chatid"]);
-    if (empty($runtime["path"]) || !hash_equals($store->path(), (string)$runtime["path"])) {
-        mod_ajaxchat_minimal_fail(403, "Invalid runtime path.");
-    }
     return $store;
 }
 

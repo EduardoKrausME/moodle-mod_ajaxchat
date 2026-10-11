@@ -57,14 +57,8 @@ $participants = get_enrolled_users($context, "mod/ajaxchat:view", 0,
     "u.id,u.firstname,u.lastname,u.firstnamephonetic,u.lastnamephonetic,u.middlename,u.alternatename,u.picture,u.imagealt",
     "u.firstname,u.lastname");
 $participantdata = [];
-$participantids = [];
-$blockableids = [];
 foreach ($participants as $participant) {
-    $participantids[] = (int)$participant->id;
     $blockable = !has_capability("mod/ajaxchat:manage", $context, (int)$participant->id);
-    if ($blockable) {
-        $blockableids[] = (int)$participant->id;
-    }
     $picture = new user_picture($participant);
     $picture->size = 48;
     $participantdata[] = [
@@ -83,45 +77,35 @@ $currentpicture->size = 64;
 $runtimeid = bin2hex(random_bytes(32));
 $csrf = bin2hex(random_bytes(32));
 $startcursor = $store->current_cursor();
-$readtoken = bin2hex(random_bytes(32));
 $expires = time() + 4 * HOURSECS;
 $runtime = [
     "runtimeid" => $runtimeid,
     "userid" => (int)$USER->id,
     "chatid" => (int)$chat->id,
     "cmid" => (int)$cm->id,
-    "path" => $store->path(),
     "csrf" => $csrf,
-    "readtoken" => $readtoken,
     "startcursor" => $startcursor,
-    "fullname" => fullname($USER),
-    "avatar" => $currentpicture->get_url($PAGE)->out(false),
     "cansend" => $cansend,
     "canmanage" => $canmanage,
     "cancreatepoll" => $cancreatepoll,
-    "participantids" => $participantids,
-    "blockableids" => $blockableids,
     "expires" => $expires,
 ];
 
 if (!isset($SESSION->mod_ajaxchat_runtimes) || !is_array($SESSION->mod_ajaxchat_runtimes)) {
     $SESSION->mod_ajaxchat_runtimes = [];
 }
+// Keep only the latest session runtime per activity and remove expired entries.
+foreach ($SESSION->mod_ajaxchat_runtimes as $oldid => $oldruntime) {
+    if (!is_array($oldruntime) || (int)($oldruntime["expires"] ?? 0) < time() ||
+        ((int)($oldruntime["chatid"] ?? 0) === (int)$chat->id &&
+         (int)($oldruntime["userid"] ?? 0) === (int)$USER->id)) {
+        unset($SESSION->mod_ajaxchat_runtimes[$oldid]);
+    }
+}
 $SESSION->mod_ajaxchat_runtimes[$runtimeid] = $runtime;
-
-chat_store::write_runtime($runtimeid, [
-    "userid" => (int)$USER->id,
-    "chatid" => (int)$chat->id,
-    "path" => $store->path(),
-    "readtoken" => $readtoken,
-    "startcursor" => $startcursor,
-    "canmanage" => $canmanage,
-    "expires" => $expires,
-]);
 
 $PAGE->requires->js_call_amd("mod_ajaxchat/chat", "init", [[
     "runtime" => $runtimeid,
-    "readtoken" => $readtoken,
     "csrfToken" => $csrf,
     "sesskey" => sesskey(),
     "userid" => (int)$USER->id,

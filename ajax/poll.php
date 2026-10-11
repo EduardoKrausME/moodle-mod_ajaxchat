@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Database-free incremental polling endpoint for mod_ajaxchat.
+ * Authenticated incremental polling endpoint for mod_ajaxchat.
  *
  * @package mod_ajaxchat
  * @copyright 2026 Eduardo Kraus
@@ -23,9 +23,7 @@
  */
 
 define("NO_DEBUG_DISPLAY", true);
-define("ABORT_AFTER_CONFIG", true);
 require_once(__DIR__ . "/../../../config.php");
-require_once(__DIR__ . "/../classes/local/chat_store.php");
 require_once(__DIR__ . "/minimal.php");
 
 header("Content-Type: application/json; charset=utf-8");
