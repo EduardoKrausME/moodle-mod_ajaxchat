@@ -29,8 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: moodle/.nvmrc
-          cache: npm
-          cache-dependency-path: moodle/package-lock.json
       - name: Build AMD modules using Moodle Grunt
         run: |
           cp -R plugin moodle/mod/ajaxchat
