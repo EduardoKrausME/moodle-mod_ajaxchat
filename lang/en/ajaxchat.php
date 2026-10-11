@@ -97,3 +97,5 @@ $string['stoprecording'] = 'Stop recording';
 $string['unblock'] = 'Unblock';
 $string['vote'] = 'Vote';
 $string['you'] = 'You';
+
+$string['taskcleanup'] = 'Clean up expired AJAX Chat sessions';

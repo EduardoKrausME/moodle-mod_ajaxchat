@@ -160,6 +160,14 @@ $contextdata = [
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template("mod_ajaxchat/chat", $contextdata);
+$event = \mod_ajaxchat\event\course_module_viewed::create([
+    "objectid" => $chat->id,
+    "context" => $context,
+]);
+$event->add_record_snapshot("course", $course);
+$event->add_record_snapshot("course_modules", $cm);
+$event->add_record_snapshot("ajaxchat", $chat);
+$event->trigger();
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 echo $OUTPUT->footer();

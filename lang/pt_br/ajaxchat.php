@@ -97,3 +97,5 @@ $string['stoprecording'] = 'Parar gravação';
 $string['unblock'] = 'Desbloquear';
 $string['vote'] = 'Votar';
 $string['you'] = 'Você';
+
+$string['taskcleanup'] = 'Limpar sessões expiradas do AJAX Chat';

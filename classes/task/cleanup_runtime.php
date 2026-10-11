@@ -39,7 +39,7 @@ class cleanup_runtime extends scheduled_task {
      * @throws coding_exception
      */
     public function get_name(): string {
-        return get_string("pluginname", "mod_ajaxchat") . " runtime cleanup";
+        return get_string("taskcleanup", "mod_ajaxchat");
     }
 
     /**
