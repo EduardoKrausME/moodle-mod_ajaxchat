@@ -130,6 +130,11 @@ function ajaxchat_delete_instance($id) {
     $DB->delete_records("ajaxchat_messages", ["ajaxchatid" => $id]);
     $DB->delete_records("ajaxchat", ["id" => $id]);
 
+    $cm = get_coursemodule_from_instance("ajaxchat", $id, 0, false, IGNORE_MISSING);
+    if ($cm) {
+        $context = context_module::instance($cm->id);
+        get_file_storage()->delete_area_files($context->id, "mod_ajaxchat", "attachment");
+    }
     chat_store::remove_instance_directory($id);
     return true;
 }
@@ -158,4 +163,36 @@ function ajaxchat_get_coursemodule_info($coursemodule) {
         $info->customdata = ["openfrom" => $instance->openfrom];
     }
     return $info;
+}
+
+/**
+ * Serve a chat attachment from the Moodle File API.
+ *
+ * @param stdClass $course
+ * @param stdClass $cm
+ * @param context $context
+ * @param string $filearea
+ * @param array $args
+ * @param bool $forcedownload
+ * @param array $options
+ * @return bool
+ */
+function ajaxchat_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
+    if ($context->contextlevel !== CONTEXT_MODULE || $filearea !== "attachment") {
+        send_file_not_found();
+    }
+    require_login($course, true, $cm);
+    require_capability("mod/ajaxchat:view", $context);
+    $itemid = (int)array_shift($args);
+    $filename = array_pop($args);
+    if ($itemid <= 0 || !$filename || $args) {
+        send_file_not_found();
+    }
+    $file = get_file_storage()->get_file($context->id, "mod_ajaxchat", "attachment",
+        $itemid, "/", $filename);
+    if (!$file || $file->is_directory()) {
+        send_file_not_found();
+    }
+    send_stored_file($file, 300, 0, $forcedownload, $options);
+    return true;
 }

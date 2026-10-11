@@ -536,35 +536,39 @@ class chat_store {
      * @return array
      * @throws RandomException
      */
-    public function store_upload(string $source, string $originalname, string $mimetype, string $kind): array {
-        $maxbytes = $kind === "audio" ? 20 * 1024 * 1024 : 25 * 1024 * 1024;
+    public function store_upload(string $source, string $originalname, string $mimetype, string $kind,
+            int $messageid, int $contextid, int $maxbytes): array {
+        global $USER;
+
         $size = filesize($source);
-        if ($size === false || $size <= 0 || $size > $maxbytes) {
+        if ($size === false || $size <= 0 || ($maxbytes > 0 && $size > $maxbytes)) {
             throw new RuntimeException("filetoolarge");
         }
 
         $extension = $this->extension_for_mimetype($mimetype, $originalname, $kind);
-        $filekey = bin2hex(random_bytes(24)) . $extension;
-        $destination = $this->basepath . "/files/" . $filekey;
-
-        if (is_uploaded_file($source)) {
-            $ok = move_uploaded_file($source, $destination);
-        } else {
-            $ok = rename($source, $destination);
-        }
-        if (!$ok) {
-            throw new RuntimeException("Unable to store uploaded file.");
-        }
-        @chmod($destination, 0600);
-
-        $displayname = trim((string)preg_replace('/[\x00-\x1F\x7F\\\/]+/u', "_", $originalname));
+        $displayname = trim((string)preg_replace('/[\x00-\x1F\x7F\\\\\/]+/u', "_", $originalname));
+        $displayname = mb_substr($displayname, 0, 175);
         if ($displayname === "") {
             $displayname = $kind === "audio" ? "audio" . $extension : "attachment" . $extension;
         }
+        // Use a trusted extension instead of executing potentially dangerous uploaded types.
+        $displayname = pathinfo($displayname, PATHINFO_FILENAME) . $extension;
+
+        \core\antivirus\manager::scan_file($source, $displayname, false);
+        get_file_storage()->create_file_from_pathname([
+            "contextid" => $contextid,
+            "component" => "mod_ajaxchat",
+            "filearea" => "attachment",
+            "itemid" => $messageid,
+            "filepath" => "/",
+            "filename" => $displayname,
+            "userid" => $USER->id,
+            "mimetype" => $mimetype,
+        ], $source);
 
         return [
-            "filekey" => $filekey,
-            "filename" => mb_substr($displayname, 0, 180),
+            "filekey" => (string)$messageid,
+            "filename" => $displayname,
             "mimetype" => $mimetype,
             "size" => $size,
             "kind" => $kind,
@@ -595,7 +599,16 @@ class chat_store {
         if (empty($attachment["filekey"])) {
             return;
         }
-        $path = $this->attachment_path((string)$attachment["filekey"]);
+        $filekey = (string)$attachment["filekey"];
+        if (ctype_digit($filekey)) {
+            $cm = get_coursemodule_from_instance("ajaxchat", $this->chatid, 0, false, IGNORE_MISSING);
+            if ($cm) {
+                $context = \context_module::instance($cm->id);
+                get_file_storage()->delete_area_files($context->id, "mod_ajaxchat", "attachment", (int)$filekey);
+            }
+            return;
+        }
+        $path = $this->attachment_path($filekey);
         if ($path) {
             @unlink($path);
         }

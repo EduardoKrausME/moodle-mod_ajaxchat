@@ -34,6 +34,18 @@ if (!empty($state["locked"])) {
     http_response_code(403);
     exit;
 }
+// New attachments live in Moodle's File API. Keep legacy file keys readable.
+if (ctype_digit($filekey)) {
+    $context = context_module::instance((int)$runtime["cmid"]);
+    $files = get_file_storage()->get_area_files($context->id, "mod_ajaxchat", "attachment",
+        (int)$filekey, "id", false);
+    if (!$files) {
+        http_response_code(404);
+        exit;
+    }
+    send_stored_file(reset($files), 300, 0, false);
+    exit;
+}
 $path = $store->attachment_path($filekey);
 if (!$path) {
     http_response_code(404);

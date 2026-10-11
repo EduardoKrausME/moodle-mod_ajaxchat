@@ -111,6 +111,7 @@ class action_service {
         $message = core_text::substr($message, 0, 5000);
         $uploadkind = optional_param("uploadkind", "", PARAM_ALPHA);
         $attachment = null;
+        $upload = null;
 
         if (!empty($_FILES["upload"]) && is_array($_FILES["upload"]) && (int)$_FILES["upload"]["error"] !== UPLOAD_ERR_NO_FILE) {
             if ((int)$_FILES["upload"]["error"] !== UPLOAD_ERR_OK) {
@@ -142,33 +143,26 @@ class action_service {
                     $mimetype = $clientmime;
                 }
             }
-            try {
-                $attachment = $this->store->store_upload(
-                    $_FILES["upload"]["tmp_name"],
-                    (string)$_FILES["upload"]["name"],
-                    $mimetype,
-                    $uploadkind === "audio" ? "audio" : "attachment"
-                );
-            } catch (RuntimeException $exception) {
-                if ($exception->getMessage() === "filetoolarge") {
-                    throw new moodle_exception("errorfiletoolarge", "mod_ajaxchat");
-                }
-                throw new moodle_exception("errorinvalidfile", "mod_ajaxchat");
-            }
+            $upload = [
+                "path" => (string)$_FILES["upload"]["tmp_name"],
+                "name" => (string)$_FILES["upload"]["name"],
+                "mime" => $mimetype,
+                "kind" => $uploadkind === "audio" ? "audio" : "attachment",
+            ];
         }
 
-        if ($message === "" && !$attachment) {
+        if ($message === "" && !$upload) {
             throw new invalid_parameter_exception("Message cannot be empty.");
         }
 
         $now = time();
-        $type = $attachment ? ($attachment["kind"] === "audio" ? "audio" : "attachment") : "text";
+        $type = $upload ? $upload["kind"] : "text";
         $record = (object)[
             "ajaxchatid" => (int)$this->runtime["chatid"],
             "userid" => $this->userid,
             "type" => $type,
             "message" => $message,
-            "filemeta" => $attachment ? json_encode($attachment, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+            "filemeta" => null,
             "pollid" => null,
             "timecreated" => $now,
             "timemodified" => 0,
@@ -177,6 +171,27 @@ class action_service {
         $transaction = $DB->start_delegated_transaction();
         try {
             $messageid = (int)$DB->insert_record("ajaxchat_messages", $record);
+            if ($upload) {
+                $cm = get_coursemodule_from_id("ajaxchat", (int)$this->runtime["cmid"], 0, false, MUST_EXIST);
+                $course = get_course($cm->course);
+                $context = \context_module::instance($cm->id);
+                $maxbytes = get_max_upload_file_size($GLOBALS["CFG"]->maxbytes, $course->maxbytes);
+                try {
+                    $attachment = $this->store->store_upload(
+                        $upload["path"], $upload["name"], $upload["mime"], $upload["kind"],
+                        $messageid, $context->id, $maxbytes
+                    );
+                } catch (RuntimeException $exception) {
+                    if ($exception->getMessage() === "filetoolarge") {
+                        throw new moodle_exception("errorfiletoolarge", "mod_ajaxchat");
+                    }
+                    throw new moodle_exception("errorinvalidfile", "mod_ajaxchat");
+                }
+                $DB->update_record("ajaxchat_messages", (object)[
+                    "id" => $messageid,
+                    "filemeta" => json_encode($attachment, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]);
+            }
             $clientmessage = [
                 "id" => $messageid,
                 "userid" => $this->userid,
