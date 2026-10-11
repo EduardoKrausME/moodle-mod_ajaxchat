@@ -32,5 +32,8 @@ function xmldb_ajaxchat_upgrade($oldversion) {
     if ($oldversion < 2026101102) {
         upgrade_mod_savepoint(true, 2026101102, "ajaxchat");
     }
+    if ($oldversion < 2026101103) {
+        upgrade_mod_savepoint(true, 2026101103, "ajaxchat");
+    }
     return true;
 }

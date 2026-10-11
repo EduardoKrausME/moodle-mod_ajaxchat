@@ -21,7 +21,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(["jquery"], function ($) {
+define(["jquery", "core/ajax"], function ($, Ajax) {
     "use strict";
 
     var config = null;
@@ -51,7 +51,7 @@ define(["jquery"], function ($) {
     var fileUrl = function (filekey) {
         return config.fileUrl + "?" + $.param({
             runtime: config.runtime,
-                        file: filekey
+            file: filekey
         });
     };
 
@@ -456,18 +456,41 @@ define(["jquery"], function ($) {
         }
     };
 
+    /**
+     * Call Moodle's external service and normalize its JSON reply to a jQuery promise.
+     *
+     * @param {String} operation The service operation.
+     * @param {Object} values Request arguments.
+     * @return {Promise} Result.
+     */
+    var callService = function (operation, values) {
+        var deferred = $.Deferred();
+        Ajax.call([{
+            methodname: "mod_ajaxchat_api",
+            args: {
+                runtime: config.runtime,
+                operation: operation,
+                payload: JSON.stringify(values || {})
+            }
+        }])[0].then(function (json) {
+            try {
+                deferred.resolve(JSON.parse(json));
+            } catch (error) {
+                deferred.reject(error);
+            }
+        }, function (error) {
+            deferred.reject(error);
+        });
+        return deferred.promise();
+    };
+
     var loadHistory = function (reload) {
         if (loadingHistory) {
             return $.Deferred().resolve().promise();
         }
         loadingHistory = true;
         setLoading(true);
-        return $.ajax({
-            url: config.historyUrl,
-            method: "GET",
-            dataType: "json",
-            data: {runtime: config.runtime}
-        }).done(function (response) {
+        return callService("history", {}).done(function (response) {
             if (!response.ok) {
                 showNotice(response.error || config.strings.errorloadchat);
                 return;
@@ -508,16 +531,7 @@ define(["jquery"], function ($) {
     };
 
     var runPoll = function () {
-        $.ajax({
-            url: config.pollUrl,
-            method: "GET",
-            dataType: "json",
-            cache: false,
-            data: {
-                runtime: config.runtime,
-                                cursor: cursor
-            }
-        }).done(function (response) {
+        callService("poll", {cursor: cursor}).done(function (response) {
             if (!response.ok) {
                 schedulePoll(3000);
                 return;
@@ -536,6 +550,11 @@ define(["jquery"], function ($) {
     };
 
     var postAction = function (action, data, file) {
+        if (!file) {
+            return callService("action", $.extend({}, data || {}, {action: action})).fail(function (error) {
+                showNotice(error.message || error.error || config.strings.erroraction);
+            });
+        }
         var form = new FormData();
         form.append("action", action);
         form.append("runtime", config.runtime);
