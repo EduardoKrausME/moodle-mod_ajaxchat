@@ -56,7 +56,6 @@ class action_service {
         $this->runtime = $runtime;
         $this->userid = $userid;
         $this->store = new chat_store((int)$runtime["chatid"]);
-
     }
 
     /**
@@ -713,6 +712,11 @@ class action_service {
         return $picture->get_url($GLOBALS["PAGE"])->out(false);
     }
 
+    /**
+     * Check live chat availability for this user.
+     *
+     * @return array
+     */
     private function require_chat_writable(): array {
         $state = $this->store->get_state();
         $canmanage = !empty($this->runtime["canmanage"]);

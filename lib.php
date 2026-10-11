@@ -128,13 +128,12 @@ function ajaxchat_delete_instance($id) {
     $DB->delete_records("ajaxchat_reactions", ["ajaxchatid" => $id]);
     $DB->delete_records("ajaxchat_blocks", ["ajaxchatid" => $id]);
     $DB->delete_records("ajaxchat_messages", ["ajaxchatid" => $id]);
-    $DB->delete_records("ajaxchat", ["id" => $id]);
-
     $cm = get_coursemodule_from_instance("ajaxchat", $id, 0, false, IGNORE_MISSING);
     if ($cm) {
         $context = context_module::instance($cm->id);
         get_file_storage()->delete_area_files($context->id, "mod_ajaxchat", "attachment");
     }
+    $DB->delete_records("ajaxchat", ["id" => $id]);
     chat_store::remove_instance_directory($id);
     return true;
 }

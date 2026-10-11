@@ -23,6 +23,8 @@
  */
 
 define("NO_DEBUG_DISPLAY", true);
+// Login and capability checks are performed in mod_ajaxchat_minimal_runtime().
+// phpcs:disable moodle.Files.RequireLogin.Missing
 require_once(__DIR__ . "/../../../config.php");
 require_once(__DIR__ . "/minimal.php");
 

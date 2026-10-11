@@ -94,8 +94,8 @@ $string['privacy:metadata:reactions'] = 'Reactions added to chat messages.';
 $string['recordaudio'] = 'Record audio';
 $string['send'] = 'Send';
 $string['stoprecording'] = 'Stop recording';
+$string['taskcleanup'] = 'Clean up expired AJAX Chat sessions';
 $string['unblock'] = 'Unblock';
 $string['vote'] = 'Vote';
 $string['you'] = 'You';
 
-$string['taskcleanup'] = 'Clean up expired AJAX Chat sessions';
