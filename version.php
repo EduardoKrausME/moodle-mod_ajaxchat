@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version = 2026101104;
-$plugin->release = "1.0.3";
+$plugin->version = 2026101900;
+$plugin->release = "1.0.4";
 $plugin->component = "mod_ajaxchat";
 $plugin->requires = 2024100700;
 $plugin->maturity = MATURITY_STABLE;
