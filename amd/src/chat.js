@@ -17,6 +17,7 @@
  * chat.js
  *
  * @module    mod_ajaxchat/chat
+ * @package   mod_ajaxchat
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
