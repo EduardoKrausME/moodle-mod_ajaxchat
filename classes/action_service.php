@@ -25,7 +25,6 @@
 namespace mod_ajaxchat;
 
 use coding_exception;
-use core_text;
 use dml_exception;
 use dml_transaction_exception;
 use finfo;
@@ -111,7 +110,7 @@ class action_service {
         $this->require_send_permission();
         $state = $this->require_chat_writable();
         $message = trim((string)$this->optional_input("message", "", PARAM_RAW));
-        $message = core_text::substr($message, 0, 5000);
+        $message = substr($message, 0, 5000);
         $uploadkind = $this->optional_input("uploadkind", "", PARAM_ALPHA);
         $attachment = null;
         $upload = null;
@@ -244,7 +243,7 @@ class action_service {
         $this->require_chat_writable();
         $messageid = $this->required_input("messageid", PARAM_INT);
         $text = trim((string)$this->required_input("message", PARAM_RAW));
-        $text = core_text::substr($text, 0, 5000);
+        $text = substr($text, 0, 5000);
         if ($text === "") {
             throw new invalid_parameter_exception("Message cannot be empty.");
         }
@@ -509,7 +508,7 @@ class action_service {
 
         $this->require_poll_permission();
         $question = trim((string)$this->required_input("question", PARAM_TEXT));
-        $question = core_text::substr($question, 0, 500);
+        $question = substr($question, 0, 500);
         $position = $this->optional_input("position", "top", PARAM_ALPHA);
         if (!in_array($position, ["top", "side"], true)) {
             $position = "top";
@@ -519,7 +518,7 @@ class action_service {
         foreach ($rawoptions as $option) {
             $option = trim(clean_param((string)$option, PARAM_TEXT));
             if ($option !== "") {
-                $options[] = core_text::substr($option, 0, 250);
+                $options[] = substr($option, 0, 250);
             }
         }
         $options = array_values(array_unique($options));
